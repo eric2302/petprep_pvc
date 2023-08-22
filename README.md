@@ -1,5 +1,5 @@
 # PETprep: Partial Volume Correction module
-This script uses PETPVC on Docker to apply partial volume correction to PET images.
+This script uses [PETPVC](https://github.com/UCL/PETPVC) on Docker to apply partial volume correction to PET images.
 It additionally formats anatomical segmentation files to accomodate the PETPVC format.
 The only requirement is to have Docker and Python (>=3.7.13) installed. In order to
 use this, clone the repo next to the folder of your BIDS-compatible data by running
