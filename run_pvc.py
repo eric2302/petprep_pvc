@@ -12,15 +12,16 @@ def main(args):
 
 
     if os.path.exists(args.bids_dir):
-        # Not validated until derivatives structure is definded in BEP23
+        # not validated until derivatives structure is definded in BEP23
         layout = BIDSLayout(args.bids_dir, validate=False)
     else:
         raise Exception('BIDS directory does not exist')
     
-    # Get all PET files if no label is given
+    # get all PET files if no label is given
     if args.participant_label is None:
         args.participant_label = layout.get(suffix='pet', space='T1w', target='subject', return_type='id')
 
+    # create derivatives directories
     if args.output_dir is None:
         output_dir = os.path.join(args.bids_dir,'derivatives','petprep_pvc')
     else:
@@ -28,11 +29,11 @@ def main(args):
     
     os.makedirs(output_dir, exist_ok=True)
     
-    # Index all sessions and pariticipants
+    # index all sessions and participants
     sessions = layout.get_sessions()
     participants = args.participant_label
     
-    # Create prefix for filenames
+    # create prefix for filenames
     if not sessions:
         file_prefix = [f'sub-{sub_id}' 
                        for sub_id in participants]
@@ -40,45 +41,55 @@ def main(args):
         file_prefix = [f'sub-{sub_id}_ses-{sess_id}' 
                        for sub_id, sess_id in zip(participants, sessions)]
 
-    # Whether to prepare anatomical data for PETPVC
+    # whether to prepare anatomical data for PETPVC
     if not args.skip_anat_prep:
-        # Create 4D tissue segmentation (fourth dimension should add up to 1)
+        # create 4D tissue segmentation (fourth dimension should add up to 1)
         for fp in file_prefix:
             if not sessions:
                 subj_dir = os.path.join(args.bids_dir, fp)
-                sub = fp
+                subj_out_dir = os.path.join(output_dir, fp)
             else:
                 sub, ses = fp.split('_')
                 subj_dir = os.path.join(args.bids_dir, sub, ses)
-        
-            anat_dir = os.path.join(subj_dir, 'anat')
+                subj_out_dir = os.path.join(output_dir, sub, ses)
+                
+                fp = fp.replace('baseline', 'baselinebrain')
+                subj_out_dir = subj_out_dir.replace('baseline', 'baselinebrain')
+
+            os.makedirs(subj_out_dir, exist_ok=True)
             
-            gm_prob = os.path.join(anat_dir, f'{sub}_label-GM_probseg.nii.gz')
-            wm_prob = os.path.join(anat_dir, f'{sub}_label-WM_probseg.nii.gz')
-            csf_prob = os.path.join(anat_dir, f'{sub}_label-CSF_probseg.nii.gz')
+            # find directory with anatomical data
+            anat_dir = find_anat_dir(args.bids_dir, subj_dir)
+            gm_prob = os.path.join(anat_dir, f'{fp}_label-GM_probseg.nii.gz')
+            wm_prob = os.path.join(anat_dir, f'{fp}_label-WM_probseg.nii.gz')
+            csf_prob = os.path.join(anat_dir, f'{fp}_label-CSF_probseg.nii.gz')
             
             path_exists = [os.path.exists(gm_prob),
                            os.path.exists(wm_prob),
                            os.path.exists(csf_prob)]
             
             if not np.all(path_exists):
-                raise Exception('Check that {GM,WM,CSF}_probseg exists in anat directory!')
+                raise Exception('Check that {GM,WM,CSF}_probseg exists in anat directory: ', anat_dir)
             
-            prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir)
+            prepare_anat(fp, gm_prob, wm_prob, csf_prob, subj_out_dir)
 
-    # Run PETPVC for every session and participant included in the analysis
+    # run PETPVC for every session and participant included in the analysis
     for fp in file_prefix:
         if not sessions:
             subj_dir = os.path.join(args.bids_dir, fp)
-            sub = fp
+            subj_out_dir = os.path.join(output_dir, fp)
         else:
             sub, ses = fp.split('_')
             subj_dir = os.path.join(args.bids_dir, sub, ses)
+            subj_out_dir = os.path.join(output_dir, sub, ses)
+            
+            fp = fp.replace('baseline', 'baselinebrain')
+            subj_out_dir = subj_out_dir.replace('baseline', 'baselinebrain')
         
-        seg_fn = f'{sub}_label-4Danatseg.nii.gz'
-        if not os.path.exists(os.path.join(output_dir, seg_fn)):
-            raise Exception(f"No tissue segmentation in output folder for {sub}. "
-                            f"Make sure it is named '{sub}_label-4Danatseg.nii.gz'")
+        seg_fn = f'{fp}_desc-4Danatseg.nii.gz'
+        if not os.path.exists(os.path.join(subj_out_dir, seg_fn)):
+            raise Exception(f"No tissue segmentation in output folder for {fp}. "
+                            f"Make sure it is named '{fp}_desc-4Danatseg.nii.gz'")
         
         pet_dir = os.path.join(subj_dir, 'pet')
         pet_fn = os.path.basename(layout.get(suffix='pet',
@@ -90,7 +101,7 @@ def main(args):
         pet_pvc_fn = f'{fp}_space-T1w_pvc-{method}_desc-preproc_pet.nii.gz'
         cmd = ("docker run "
                f"-v {pet_dir}:/input "
-               f"-v {output_dir}:/output "
+               f"-v {subj_out_dir}:/output "
                f"{args.version}/petpvc petpvc "
                f"-i /input/{pet_fn} "
                f"-m /output/{seg_fn} "
@@ -103,9 +114,28 @@ def main(args):
         result = subprocess.run(cmd, shell=True, text=True, 
                                 stderr=subprocess.STDOUT)
 
+# HELPER FUNCTIONS
+
+def find_anat_dir(bids_dir, subj_dir):
+    subj_path = os.path.relpath(subj_dir, bids_dir)
+
+    # check if smriprep directory exists in the derivatives folder
+    smriprep_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path)
+    smriprep_dir = smriprep_dir.replace('baseline','baselinebrain')
+
+    if os.path.exists(smriprep_dir):
+        # return anat directory in the smriprep folder
+        subj_path = subj_path.replace('baseline','baselinebrain')
+        anat_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path, 'anat')
+        return anat_dir
+    else:
+        # return anat directory in the subject folder
+        anat_dir = os.path.join(subj_dir, 'anat')
+        return anat_dir
+
 def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     print(f"Preparing segmentation for {sub}")
-    # Dividing by zero - turning off warnings temporarily
+    # dividing by zero - turning off warnings temporarily
     warnings.filterwarnings("ignore", category=RuntimeWarning)  
                 
     norm_gm  =  ni.math_img("img1 / (img1 + img2 + img3)", 
@@ -129,11 +159,11 @@ def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     data = np.nan_to_num(norm_csf.get_fdata())
     norm_csf = ni.new_img_like(csf_prob, data)
 
-    seg_fn = os.path.join(output_dir, f'{sub}_label-4Danatseg.nii.gz')
+    seg_fn = os.path.join(output_dir, f'{sub}_desc-4Danatseg.nii.gz')
     seg = ni.concat_imgs([norm_gm, norm_wm, norm_csf])
     seg.to_filename(seg_fn)
 
-    # Reset warnings
+    # reset warnings
     warnings.resetwarnings()
     
     return None
