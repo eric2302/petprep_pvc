@@ -1,3 +1,4 @@
+# %%
 import argparse
 import os
 import warnings
@@ -52,9 +53,6 @@ def main(args):
                 sub, ses = fp.split('_')
                 subj_dir = os.path.join(args.bids_dir, sub, ses)
                 subj_out_dir = os.path.join(output_dir, sub, ses)
-                
-                fp = fp.replace('baseline', 'baselinebrain')
-                subj_out_dir = subj_out_dir.replace('baseline', 'baselinebrain')
 
             os.makedirs(subj_out_dir, exist_ok=True)
             
@@ -78,25 +76,29 @@ def main(args):
         if not sessions:
             subj_dir = os.path.join(args.bids_dir, fp)
             subj_out_dir = os.path.join(output_dir, fp)
+            pet_dir = os.path.join(args.bids_dir, 'derivatives', 'petprep_extract_tacs', fp)
         else:
             sub, ses = fp.split('_')
             subj_dir = os.path.join(args.bids_dir, sub, ses)
             subj_out_dir = os.path.join(output_dir, sub, ses)
+            pet_dir = os.path.join(args.bids_dir, 'derivatives', 'petprep_extract_tacs', sub, ses)
             
-            fp = fp.replace('baseline', 'baselinebrain')
-            subj_out_dir = subj_out_dir.replace('baseline', 'baselinebrain')
-        
         seg_fn = f'{fp}_desc-4Danatseg.nii.gz'
         if not os.path.exists(os.path.join(subj_out_dir, seg_fn)):
             raise Exception(f"No tissue segmentation in output folder for {fp}. "
                             f"Make sure it is named '{fp}_desc-4Danatseg.nii.gz'")
         
-        pet_dir = os.path.join(subj_dir, 'pet')
-        pet_fn = os.path.basename(layout.get(suffix='pet',
-                                             space = 'T1w', 
-                                             subject=sub.split('-')[1], 
-                                             extension=['.nii', '.nii.gz'], 
-                                             return_type='filename')[0])
+        subj_out_dir = os.path.abspath(subj_out_dir)
+        pet_dir = os.path.abspath(pet_dir)
+        pet_fn = f'{fp}_space-T1w_desc-twa_pet.nii.gz'
+        
+        align_seg_to_pet(subj_out_dir, seg_fn, pet_dir, pet_fn)
+                       
+        # pet_fn = os.path.basename(layout.get(suffix='pet',
+        #                                      space = 'T1w', 
+        #                                      subject=sub.split('-')[1], 
+        #                                      extension=['.nii', '.nii.gz'], 
+        #                                      return_type='filename')[0])
         method = args.pvc_method.lower()
         pet_pvc_fn = f'{fp}_space-T1w_pvc-{method}_desc-preproc_pet.nii.gz'
         cmd = ("docker run "
@@ -121,11 +123,9 @@ def find_anat_dir(bids_dir, subj_dir):
 
     # check if smriprep directory exists in the derivatives folder
     smriprep_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path)
-    smriprep_dir = smriprep_dir.replace('baseline','baselinebrain')
 
     if os.path.exists(smriprep_dir):
         # return anat directory in the smriprep folder
-        subj_path = subj_path.replace('baseline','baselinebrain')
         anat_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path, 'anat')
         return anat_dir
     else:
@@ -165,6 +165,14 @@ def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
 
     # reset warnings
     warnings.resetwarnings()
+    
+    return None
+
+def align_seg_to_pet(seg_dir, seg_fn, pet_dir, pet_fn):
+    seg_img = nib.load(os.path.join(seg_dir, seg_fn))
+    pet_img = nib.load(os.path.join(pet_dir, pet_fn))
+    seg_img = ni.resample_to_img(seg_img, pet_img, interpolation='nearest')
+    seg_img.to_filename(os.path.join(seg_dir, seg_fn))
     
     return None
 
