@@ -1,8 +1,8 @@
 # PETprep: Partial Volume Correction module
-This script uses [PETPVC](https://github.com/UCL/PETPVC) on Docker to apply partial volume correction to PET images.
+This script uses [PETPVC](https://github.com/UCL/PETPVC) to apply partial volume correction to PET images.
 It additionally formats anatomical segmentation files to accomodate the PETPVC format.
 
-The only requirement is to have Docker and Python (>=3.7.13) installed. In order to
+The only requirement is to have Conda and Python (>=3.7.13) installed. In order to
 use this, clone the repo next to the folder of your BIDS-compatible data by running
 
     git clone git@github.com:eric2302/petprep_pvc.git
@@ -10,7 +10,9 @@ use this, clone the repo next to the folder of your BIDS-compatible data by runn
 ## Requirements
 Make sure you have all the needed packages by running
     
-    pip install -r requirements.txt
+    conda env create -f environment.yml
+
+using the environment file provided in this repostiory.
 
 ## Use
 In order to use this script, call on the terminal
@@ -46,8 +48,5 @@ to run the complete workflow. All the options inlcuded in this current version a
                           
     --fwhm FWHM           Full width at half maximum in mm for point spread
                           function.
-                          
-    --version VERSION     Corresponds to the user that hosts the PETPVC
-                          container on Docker Hub.
                         
     --skip_anat_prep      Whether or not to prepare anatomical data for PETPVC.
