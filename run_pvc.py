@@ -101,16 +101,24 @@ def main(args):
         #                                      return_type='filename')[0])
         method = args.pvc_method.lower()
         pet_pvc_fn = f'{fp}_space-T1w_pvc-{method}_desc-preproc_pet.nii.gz'
-        cmd = ("docker run "
-               f"-v {pet_dir}:/input "
-               f"-v {subj_out_dir}:/output "
-               f"{args.version}/petpvc petpvc "
-               f"-i /input/{pet_fn} "
-               f"-m /output/{seg_fn} "
-               f"-o /output/{pet_pvc_fn} "
+        cmd = ("petpvc "
+               f"-i {pet_dir}/{pet_fn} "
+               f"-m {subj_out_dir}/{seg_fn} "
+               f"-o {subj_out_dir}/{pet_pvc_fn} "
                f"-p {args.pvc_method} "
-               f"-x {args.fwhm} -y {args.fwhm} -z {args.fwhm}"
-                )
+               f"-x {args.fwhm} -y {args.fwhm} -z {args.fwhm}")
+
+
+        # cmd = ("docker run "
+        #        f"-v {pet_dir}:/input "
+        #        f"-v {subj_out_dir}:/output "
+        #        f"{args.version}/petpvc petpvc "
+        #        f"-i /input/{pet_fn} "
+        #        f"-m /output/{seg_fn} "
+        #        f"-o /output/{pet_pvc_fn} "
+        #        f"-p {args.pvc_method} "
+        #        f"-x {args.fwhm} -y {args.fwhm} -z {args.fwhm}"
+        #         )
         
         print("Running PETPVC")
         result = subprocess.run(cmd, shell=True, text=True, 
