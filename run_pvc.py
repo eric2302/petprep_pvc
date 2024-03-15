@@ -1,5 +1,4 @@
 # %%
-# %%
 import argparse
 import os
 import warnings
@@ -11,7 +10,6 @@ from bids import BIDSLayout
 
 # %%
 def main(args):
-
 
     if os.path.exists(args.bids_dir):
         # not validated until derivatives structure is definded in BEP23
@@ -42,11 +40,9 @@ def main(args):
     else:
         file_prefix = [f'sub-{sub_id}_ses-{sess_id}' 
                        for sub_id, sess_id in zip(participants, sessions)]
-
-    # whether to prepare anatomical data for PETPVC
+    
     # whether to prepare anatomical data for PETPVC
     if not args.skip_anat_prep:
-        # create 4D tissue segmentation (fourth dimension should add up to 1)
         # create 4D tissue segmentation (fourth dimension should add up to 1)
         for fp in file_prefix:
             if not sessions:
@@ -165,7 +161,6 @@ def find_anat_dir(bids_dir, subj_dir):
 
 def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     print(f"Preparing segmentation for {sub}")
-    
     # dividing by zero - turning off warnings temporarily
     warnings.filterwarnings("ignore", category=RuntimeWarning)  
                 
