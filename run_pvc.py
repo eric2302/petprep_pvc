@@ -65,7 +65,7 @@ def main(args):
             gm_prob = os.path.join(anat_dir, f'{fp}_label-GM_probseg.nii.gz')
             wm_prob = os.path.join(anat_dir, f'{fp}_label-WM_probseg.nii.gz')
             csf_prob = os.path.join(anat_dir, f'{fp}_label-CSF_probseg.nii.gz')
-        subj_out_dir = os.path.join(output_dir, sub, ses)
+            subj_out_dir = os.path.join(output_dir, sub, ses)
 
             os.makedirs(subj_out_dir, exist_ok=True)
             
