@@ -15,17 +15,14 @@ def main(args):
 
     if os.path.exists(args.bids_dir):
         # not validated until derivatives structure is definded in BEP23
-        # not validated until derivatives structure is definded in BEP23
         layout = BIDSLayout(args.bids_dir, validate=False)
     else:
         raise Exception('BIDS directory does not exist')
     
     # get all PET files if no label is given
-    # get all PET files if no label is given
     if args.participant_label is None:
         args.participant_label = layout.get(suffix='pet', space='T1w', target='subject', return_type='id')
 
-    # create derivatives directories
     # create derivatives directories
     if args.output_dir is None:
         output_dir = os.path.join(args.bids_dir,'derivatives','petprep_pvc')
@@ -35,11 +32,9 @@ def main(args):
     os.makedirs(output_dir, exist_ok=True)
     
     # index all sessions and participants
-    # index all sessions and participants
     sessions = layout.get_sessions()
     participants = args.participant_label
     
-    # create prefix for filenames
     # create prefix for filenames
     if not sessions:
         file_prefix = [f'sub-{sub_id}' 
@@ -70,7 +65,7 @@ def main(args):
             gm_prob = os.path.join(anat_dir, f'{fp}_label-GM_probseg.nii.gz')
             wm_prob = os.path.join(anat_dir, f'{fp}_label-WM_probseg.nii.gz')
             csf_prob = os.path.join(anat_dir, f'{fp}_label-CSF_probseg.nii.gz')
-                subj_out_dir = os.path.join(output_dir, sub, ses)
+        subj_out_dir = os.path.join(output_dir, sub, ses)
 
             os.makedirs(subj_out_dir, exist_ok=True)
             
@@ -170,7 +165,6 @@ def find_anat_dir(bids_dir, subj_dir):
 def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     print(f"Preparing segmentation for {sub}")
     # dividing by zero - turning off warnings temporarily
-    # dividing by zero - turning off warnings temporarily
     warnings.filterwarnings("ignore", category=RuntimeWarning)  
                 
     norm_gm  =  ni.math_img("img1 / (img1 + img2 + img3)", 
@@ -199,7 +193,6 @@ def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     seg = ni.concat_imgs([norm_gm, norm_wm, norm_csf])
     seg.to_filename(seg_fn)
 
-    # reset warnings
     # reset warnings
     warnings.resetwarnings()
     
