@@ -145,6 +145,7 @@ def find_anat_dir(bids_dir, subj_dir):
         anat_dir = os.path.join(subj_dir, 'anat')
         return anat_dir
 
+
 # HELPER FUNCTIONS
 
 def find_anat_dir(bids_dir, subj_dir):
@@ -164,6 +165,7 @@ def find_anat_dir(bids_dir, subj_dir):
 
 def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     print(f"Preparing segmentation for {sub}")
+    
     # dividing by zero - turning off warnings temporarily
     warnings.filterwarnings("ignore", category=RuntimeWarning)  
                 
