@@ -141,24 +141,6 @@ def find_anat_dir(bids_dir, subj_dir):
         anat_dir = os.path.join(subj_dir, 'anat')
         return anat_dir
 
-
-# HELPER FUNCTIONS
-
-def find_anat_dir(bids_dir, subj_dir):
-    subj_path = os.path.relpath(subj_dir, bids_dir)
-
-    # check if smriprep directory exists in the derivatives folder
-    smriprep_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path)
-
-    if os.path.exists(smriprep_dir):
-        # return anat directory in the smriprep folder
-        anat_dir = os.path.join(bids_dir, 'derivatives', 'smriprep', subj_path, 'anat')
-        return anat_dir
-    else:
-        # return anat directory in the subject folder
-        anat_dir = os.path.join(subj_dir, 'anat')
-        return anat_dir
-
 def prepare_anat(sub, gm_prob, wm_prob, csf_prob, output_dir):
     print(f"Preparing segmentation for {sub}")
     # dividing by zero - turning off warnings temporarily
